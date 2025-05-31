@@ -1,0 +1,11 @@
+openai
+langchain
+langchain-openai
+langchain-community
+faiss-cpu
+pillow
+requests
+python-dotenv
+flask
+flask-cors
+werkzeug
