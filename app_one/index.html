@@ -1,0 +1,98 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Artist Style Generator</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Artist Style Generator</h1>
+
+    <div class="button-bar">
+      <!-- Thematic buttons -->
+      <button onclick="generatePrompt('nature')">Nature</button>
+      <button onclick="generatePrompt('fantasy')">Fantasy</button>
+      <button onclick="generatePrompt('animals')">Animals</button>
+      <button onclick="generatePrompt('abstract')">Abstract</button>
+      <button onclick="generatePrompt('urban')">Urban</button>
+    </div>
+
+    <textarea id="promptInput" placeholder="Your generated prompt will appear here..." rows="5"></textarea>
+
+    <button id="generateArtBtn" onclick="generateArt()">Generate Art</button>
+
+    <div id="result">
+      <!-- Generated image will appear here -->
+    </div>
+  </div>
+
+<script>
+async function generatePrompt(theme) {
+  try {
+    const response = await fetch(`/generate_prompt?theme=${encodeURIComponent(theme)}`);
+    const data = await response.json();
+    if (data.prompt) {
+      document.getElementById("promptInput").value = data.prompt;
+    } else if (data.error) {
+      alert("Error: " + data.error);
+    }
+  } catch (e) {
+    alert("Failed to fetch prompt.");
+  }
+}
+
+async function generateArt() {
+  const prompt = document.getElementById("promptInput").value.trim();
+  if (!prompt) {
+    alert("Please enter or generate a prompt first.");
+    return;
+  }
+  document.getElementById("result").innerHTML = "Generating image, please wait...";
+
+  try {
+    const response = await fetch("/generate_art", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({prompt})
+    });
+    const data = await response.json();
+    if (data.image_url)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
