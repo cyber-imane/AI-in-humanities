@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Artist Style Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+      text-align: center;
+    }
+    .theme-buttons button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      background-color: #333;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .theme-buttons button:hover {
+      background-color: #555;
+    }
+    #promptInput {
+      width: 60%;
+      padding: 10px;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    #generateBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 30px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Artist Style Generator 🎨</h1>
+
+  <div class="theme-buttons">
+    <button onclick="fetchPrompt('art')">🎭 Art</button>
+    <button onclick="fetchPrompt('nature')">🌿 Nature</button>
+    <button onclick="fetchPrompt('animals')">🦁 Animals</button>
+    <button onclick="fetchPrompt('space')">🌌 Space</button>
+    <button onclick="fetchPrompt('surreal')">🌀 Surreal</button>
+  </div>
+
+  <input type="text" id="promptInput" placeholder="Your prompt will appear here..." />
+  <button id="generateBtn" onclick="generateArt()">Generate</button>
+
+  <div id="result"></div>
+
+  <script>
+    async function fetchPrompt(theme) {
+      try {
+        const response = await fetch(`/generate_prompt/${theme}`);
+        const data = await response.json();
+        if (data.prompt) {
+          document.getElementById("promptInput").value = data.prompt;
+        } else {
+          alert("Prompt not received.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Failed to fetch prompt.");
+      }
+    }
+
+    async function generateArt() {
+      const prompt = document.getElementById("promptInput").value.trim();
+      if (!prompt) {
+        alert("Please enter or generate a prompt first.");
+        return;
+      }
+      document.getElementById("result").innerHTML = "Generating image, please wait...";
+
+      try {
+        const response = await fetch("/generate_art", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+        const data = await response.json();
+        if (data.image_url) {
+          document.getElementById("result").innerHTML = `
+            <p><strong>Prompt:</strong> ${prompt}</p>
+            <img src="${data.image_url}" alt="Generated Art" />
+          `;
+        } else {
+          document.getElementById("result").innerHTML = "No image returned.";
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById("result").innerHTML = "Failed to generate image.";
+      }
+    }
+  </script>
+</body>
+</html>
