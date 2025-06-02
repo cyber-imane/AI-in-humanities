@@ -1,11 +1,13 @@
-openai
-langchain
-langchain-openai
-langchain-community
-faiss-cpu
-pillow
-requests
-python-dotenv
-flask
-flask-cors
-werkzeug
+openai                # For DALL·E and GPT API
+langchain             # Core LangChain functionality
+langchain-openai      # LangChain’s OpenAI integration
+langchain-community   # For FAISS loader, image tools, etc.
+faiss-cpu             # Vector store for embeddings
+pillow                # Image processing
+requests              # For HTTP calls
+python-dotenv         # Environment variable loading
+flask                 # Web framework
+flask-cors            # Optional if enabling CORS
+werkzeug              # Flask’s dependency (can stay)
+
+

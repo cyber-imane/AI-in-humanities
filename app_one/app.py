@@ -6,7 +6,7 @@ import os
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
 # Initialize the style generator
-generator = ArtistStyleGenerator(gallery_path="gallery")  # Update path as needed
+generator = ArtistStyleGenerator(gallery_path="artist_gallery")  # Update path as needed
 
 @app.route("/")
 def home():

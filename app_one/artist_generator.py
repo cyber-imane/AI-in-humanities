@@ -1,6 +1,3 @@
-
-
-
 import os
 import base64
 from typing import Optional
@@ -9,11 +6,6 @@ import io
 from PIL import Image
 import requests
 from datetime import datetime
-from dotenv import load_dotenv
-
-#load_dotenv()
-
-
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -22,8 +14,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage
-
 from openai import OpenAI
+
 
 class ArtistStyleGenerator:
     def __init__(self, gallery_path: str):
@@ -32,9 +24,7 @@ class ArtistStyleGenerator:
         self.embeddings = OpenAIEmbeddings()
         self.client = OpenAI()
         self.vector_store = None
-        
-        print("🎨 Initializing Artist Style Generator...")
-        print(f"📁 Processing gallery: {self.gallery_path}")
+
         self._process_gallery()
 
     def _load_image(self, image_path: str) -> Image.Image:
@@ -50,13 +40,9 @@ class ArtistStyleGenerator:
             content=[
                 {
                     "type": "text",
-                    "text": "Analyze this artwork and describe the artistic style in comprehensive detail. "
-                            "Focus on: 1) Color palette and color harmony, 2) Brushwork and texture techniques, "
-                            "3) Composition and spatial arrangement, 4) Light and shadow usage, "
-                            "5) Subject matter and themes, 6) Overall mood and atmosphere, "
-                            "7) Technical approach and medium characteristics. "
-                            "Provide specific descriptive terms that would help an AI art generator "
-                            "recreate this exact artistic style and aesthetic."
+                    "text": "Analyze this artwork and describe the artistic style in detail: color palette, brushwork, "
+                            "composition, lighting, subject matter, mood, and medium. Use descriptive language suitable "
+                            "for AI prompt generation."
                 },
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_str}"}}
             ]
@@ -70,12 +56,10 @@ class ArtistStyleGenerator:
         image_paths = [p for p in self.gallery_path.iterdir() if p.suffix.lower() in image_extensions]
 
         if not image_paths:
-            raise ValueError(f"No images found in {self.gallery_path}. Supported formats: {', '.join(image_extensions)}")
+            raise ValueError(f"No images found in {self.gallery_path}.")
 
-        print(f"🖼️  Found {len(image_paths)} images to analyze...")
         for img_path in image_paths:
             try:
-                print(f"   Analyzing {img_path.name}...")
                 analysis = self._analyze_image(str(img_path))
                 doc = Document(
                     page_content=analysis,
@@ -86,69 +70,46 @@ class ArtistStyleGenerator:
                     }
                 )
                 documents.append(doc)
-                print(f"   ✅ Successfully processed {img_path.name}")
             except Exception as e:
-                print(f"   ❌ Error processing {img_path.name}: {e}")
+                print(f"Error processing {img_path.name}: {e}")
 
         if documents:
-            print(f"🔄 Creating vector store from {len(documents)} analyzed images...")
             self.vector_store = FAISS.from_documents(documents, self.embeddings)
-            print(f"✅ Vector store created successfully!")
-            print(f"🎯 Ready to generate art inspired by the artist's style!\n")
         else:
-            raise ValueError("No images were successfully processed. Check the gallery path and image formats.")
+            raise ValueError("No images were successfully processed.")
 
     def _retrieve_style_context(self, prompt: str, n_results: int = 2) -> str:
         if not self.vector_store:
-            raise ValueError("Vector store is not initialized. Process the gallery first.")
-
-        print(f"🔍 Searching for relevant style patterns for: '{prompt}'")
+            raise ValueError("Vector store is not initialized.")
         similar_docs = self.vector_store.similarity_search(prompt, k=n_results)
-        print(f"📚 Found {len(similar_docs)} relevant style references")
-        for i, doc in enumerate(similar_docs, 1):
-            print(f"   Reference {i}: {doc.metadata['filename']}")
         combined_style = "\n\n--- STYLE REFERENCE ---\n".join([doc.page_content for doc in similar_docs])
         return combined_style
 
     def generate_art(self, prompt: str, save_path: Optional[str] = None) -> Optional[str]:
-        print(f"\n🎨 Generating art for: '{prompt}'")
         style_context = self._retrieve_style_context(prompt)
 
         enhancement_prompt = ChatPromptTemplate.from_template(
-            """You are an expert art director specialized in recreating specific artistic styles for AI image generation.
+            """You are an expert art director.
 
 ARTIST'S STYLE ANALYSIS:
 {style_context}
 
 USER'S CREATIVE REQUEST: {user_prompt}
 
-TASK: Create a detailed DALL-E prompt that will generate an image matching the user's request while 
-faithfully reproducing the artist's distinctive style. The prompt should be highly specific and include:
-
-1. The exact subject matter requested by the user
-2. Specific color palette and color relationships from the artist's work
-3. Precise brushwork and texture techniques
-4. Composition and spatial arrangement style
-5. Lighting and atmospheric qualities
-6. Any distinctive artistic techniques or signature elements
-
-Make the prompt detailed enough that DALL-E will create art that clearly reflects this artist's 
-unique style while depicting the user's requested subject.
+TASK: Create a detailed DALL-E prompt that merges the user's vision with the artist's style.
 
 ENHANCED DALL-E PROMPT:"""
         )
+
         enhancement_chain = (
             {"style_context": lambda x: style_context, "user_prompt": lambda x: x}
             | enhancement_prompt
             | self.llm
             | StrOutputParser()
         )
-        print("🔧 Enhancing prompt with artist's style...")
-        enhanced_prompt = enhancement_chain.invoke(prompt)
-        print(f"📝 Enhanced prompt created:")
-        print(f"   '{enhanced_prompt[:100]}{'...' if len(enhanced_prompt) > 100 else ''}'")
 
-        print("🖼️  Generating image with DALL-E...")
+        enhanced_prompt = enhancement_chain.invoke(prompt)
+
         try:
             response = self.client.images.generate(
                 model="dall-e-3",
@@ -158,7 +119,6 @@ ENHANCED DALL-E PROMPT:"""
                 n=1,
             )
             image_url = response.data[0].url
-            print(f"✅ Image generated successfully!")
 
             if save_path:
                 try:
@@ -170,58 +130,26 @@ ENHANCED DALL-E PROMPT:"""
                     filename = f"{timestamp}_{safe_prompt}.png"
                     full_path = save_dir / filename
 
-                    print(f"💾 Downloading and saving image...")
                     img_response = requests.get(image_url)
                     if img_response.status_code == 200:
                         with open(full_path, "wb") as f:
                             f.write(img_response.content)
-                        print(f"✅ Image saved to: {full_path}")
-                    else:
-                        print(f"❌ Failed to download image: HTTP {img_response.status_code}")
                 except Exception as e:
-                    print(f"❌ Error saving image: {e}")
+                    print(f"Error saving image: {e}")
 
             return image_url
         except Exception as e:
-            print(f"❌ Error generating image: {e}")
+            print(f"Error generating image: {e}")
             return None
 
     def generate_random_thematic_prompt(self, theme: str) -> str:
-        """
-        Generate a fresh random prompt related to the theme using LLM.
-        """
         theme = theme.lower()
 
         prompt_template = f"""
-You are an expert prompt creator for AI art generation. Please create a vivid, imaginative, detailed text prompt that
-describes an artwork strictly within the theme: '{theme}'. Include descriptions of subjects, settings, mood, color palettes,
-and styles that would inspire a rich DALL·E image. Keep it creative, open-ended, and evocative.
+You are an imaginative prompt engineer. Create a vivid and rich AI art prompt inspired by the theme: '{theme}'. 
+Include subjects, scene composition, mood, color palette, and any surreal or symbolic elements. 
+Be poetic and evocative — something that inspires a unique DALL·E image.
 """
 
         response = self.llm.invoke([HumanMessage(content=prompt_template)])
         return response.content.strip()
-
-    # ... you can keep the interactive_mode and helper methods if you want ...
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,112 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Artist Style Generator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 30px;
-      background-color: #f9f9f9;
-      text-align: center;
-    }
-    .theme-buttons button {
-      margin: 5px;
-      padding: 10px 15px;
-      font-size: 16px;
-      border: none;
-      background-color: #333;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .theme-buttons button:hover {
-      background-color: #555;
-    }
-    #promptInput {
-      width: 60%;
-      padding: 10px;
-      margin-top: 20px;
-      font-size: 16px;
-    }
-    #generateBtn {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-left: 10px;
-      cursor: pointer;
-    }
-    #result {
-      margin-top: 30px;
-    }
-    img {
-      max-width: 100%;
-      height: auto;
-      margin-top: 20px;
-      border-radius: 8px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>AI Artist Style Generator</title>
+    <link rel="stylesheet" href="{{ url_for('send_static', path='style.css') }}">
 </head>
 <body>
-  <h1>Artist Style Generator 🎨</h1>
+    <div class="container">
+        <h1>🎨 AI Artist Style Generator</h1>
 
-  <div class="theme-buttons">
-    <button onclick="fetchPrompt('art')">🎭 Art</button>
-    <button onclick="fetchPrompt('nature')">🌿 Nature</button>
-    <button onclick="fetchPrompt('animals')">🦁 Animals</button>
-    <button onclick="fetchPrompt('space')">🌌 Space</button>
-    <button onclick="fetchPrompt('surreal')">🌀 Surreal</button>
-  </div>
+        <div class="button-group">
+            <button onclick="generatePrompt('nature')">Nature</button>
+            <button onclick="generatePrompt('fantasy')">Fantasy</button>
+            <button onclick="generatePrompt('portrait')">Portrait</button>
+            <button onclick="generatePrompt('urban')">Urban</button>
+            <button onclick="generatePrompt('animals')">Animals</button>
+        </div>
 
-  <input type="text" id="promptInput" placeholder="Your prompt will appear here..." />
-  <button id="generateBtn" onclick="generateArt()">Generate</button>
+        <textarea id="promptInput" placeholder="Your prompt will appear here..." rows="6"></textarea>
+        <button onclick="submitPrompt()">Generate Image</button>
 
-  <div id="result"></div>
+        <div id="result">
+            <p id="status"></p>
+            <img id="generatedImage" src="" alt="" style="display:none;">
+        </div>
+    </div>
 
-  <script>
-    async function fetchPrompt(theme) {
-      try {
-        const response = await fetch(`/generate_prompt/${theme}`);
-        const data = await response.json();
-        if (data.prompt) {
-          document.getElementById("promptInput").value = data.prompt;
-        } else {
-          alert("Prompt not received.");
+    <script>
+        function generatePrompt(theme) {
+            fetch(`/generate_prompt/${theme}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.prompt) {
+                        document.getElementById('promptInput').value = data.prompt;
+                    } else {
+                        alert('Error generating prompt: ' + (data.error || 'Unknown'));
+                    }
+                });
         }
-      } catch (error) {
-        console.error(error);
-        alert("Failed to fetch prompt.");
-      }
-    }
 
-    async function generateArt() {
-      const prompt = document.getElementById("promptInput").value.trim();
-      if (!prompt) {
-        alert("Please enter or generate a prompt first.");
-        return;
-      }
-      document.getElementById("result").innerHTML = "Generating image, please wait...";
+        function submitPrompt() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert("Please enter or generate a prompt first.");
+                return;
+            }
 
-      try {
-        const response = await fetch("/generate_art", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt })
-        });
-        const data = await response.json();
-        if (data.image_url) {
-          document.getElementById("result").innerHTML = `
-            <p><strong>Prompt:</strong> ${prompt}</p>
-            <img src="${data.image_url}" alt="Generated Art" />
-          `;
-        } else {
-          document.getElementById("result").innerHTML = "No image returned.";
+            document.getElementById('status').textContent = "⏳ Generating image...";
+            document.getElementById('generatedImage').style.display = 'none';
+
+            fetch("/generate_art", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({prompt: prompt})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.image_url) {
+                    document.getElementById('generatedImage').src = data.image_url;
+                    document.getElementById('generatedImage').style.display = 'block';
+                    document.getElementById('status').textContent = "✅ Done!";
+                } else {
+                    document.getElementById('status').textContent = "❌ " + (data.error || 'Failed to generate image.');
+                }
+            })
+            .catch(err => {
+                document.getElementById('status').textContent = "❌ " + err.message;
+            });
         }
-      } catch (error) {
-        console.error(error);
-        document.getElementById("result").innerHTML = "Failed to generate image.";
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
