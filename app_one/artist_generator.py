@@ -15,6 +15,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage
 from openai import OpenAI
+from dotenv import load_dotenv
+load_dotenv()
+
 
 
 class ArtistStyleGenerator:
